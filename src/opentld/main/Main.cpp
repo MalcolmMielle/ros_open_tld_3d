@@ -37,169 +37,162 @@
 using namespace tld;
 using namespace cv;
 
-
-void Main::doWork(const sensor_msgs::PointCloud2ConstPtr& cloudy)
+void Main::doWork(const sensor_msgs::ImageConstPtr& msg)
 {	
+	std::cout<<"openCV"<<std::endl;
 
-	if(ros::Time::now()-cloudy->header.stamp<ros::Duration(time_constant)){
-		pcl::PointCloud<pcl::PointXYZRGBA> cloud;
-		Mat img;
-		handy->conversionFROMrosmsg(cloudy, img, &cloud);
-		Mat grey;
-		cvtColor(img, grey, CV_BGR2GRAY);
+	cv_bridge::CvImagePtr image_msg =cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);		
+	Mat img=image_msg->image;
+	Mat grey;
+	cvtColor(img, grey, CV_BGR2GRAY);
 
-		if(flag==true){
-		
-			tld->detectorCascade->setImgSize(grey.cols, grey.rows, grey.step);
+	if(flag==true){
+	
+		tld->detectorCascade->setImgSize(grey.cols, grey.rows, grey.step);
 
-			#ifdef CUDA_ENABLED
-			tld->learningEnabled = false;
-			selectManually = false;
+		#ifdef CUDA_ENABLED
+		tld->learningEnabled = false;
+		selectManually = false;
 
-			if(tld->learningEnabled || selectManually)
-				std::cerr << "Sorry. Learning and manual object selection is not supported with CUDA implementation yet!!!" << std::endl;
-			#endif
+		if(tld->learningEnabled || selectManually)
+			std::cerr << "Sorry. Learning and manual object selection is not supported with CUDA implementation yet!!!" << std::endl;
+		#endif
 
-			if(showTrajectory){
-				trajectory.init(trajectoryLength);
-			}
-
-			if(selectManually){
-				CvRect box;
-				if(getBBFromUser(&img, box, gui) == PROGRAM_EXIT){
-					return;
-				}
-
-				if(initialBB == NULL){
-					initialBB = new int[4];
-				}
-
-				initialBB[0] = box.x;
-				initialBB[1] = box.y;
-				initialBB[2] = box.width;
-				initialBB[3] = box.height;
-			}
-
-			if(printResults != NULL){
-				resultsFile = fopen(printResults, "w");
-			}
-
-			if(loadModel && modelPath != ""){
-				tld->readFromFile(modelPath);
-				reuseFrameOnce = true;
-			}
-			else if(initialBB != NULL){
-				Rect bb = tldArrayToRect(initialBB);
-
-				printf("Starting at %d %d %d %d\n", bb.x, bb.y, bb.width, bb.height);
-
-				tld->selectObject(grey, &bb);
-				skipProcessingOnce = true;
-				reuseFrameOnce = true;
-			}
-			flag=false;
+		if(showTrajectory){
+			trajectory.init(trajectoryLength);
 		}
 
-	/****************main while*********************/
+		if(selectManually){
+			CvRect box;
+			if(getBBFromUser(&img, box, gui) == PROGRAM_EXIT){
+				return;
+			}
 
-		tick_t procInit, procFinal;
-		double tic = cvGetTickCount();
+			if(initialBB == NULL){
+				initialBB = new int[4];
+			}
 
-		if(!skipProcessingOnce){
-			//std::cout<<"Skip"<<std::endl;
-			getCPUTick(&procInit);
-			tld->processImage(img);
-			getCPUTick(&procFinal);
-			//PRINT_TIMING("FrameProcTime", procInit, procFinal, "\n");
+			initialBB[0] = box.x;
+			initialBB[1] = box.y;
+			initialBB[2] = box.width;
+			initialBB[3] = box.height;
 		}
-		else{
-			skipProcessingOnce = false;
-		}
 
-		/*******************PRINT ON THE TERMINAL************************/
 		if(printResults != NULL){
-			if(tld->currBB != NULL){
-				fprintf(resultsFile, "%.2d %.2d %.2d %.2d %f\n", tld->currBB->x, tld->currBB->y, tld->currBB->width, tld->currBB->height, tld->currConf);
-			}
-			else{
-				fprintf(resultsFile, " NaN NaN NaN NaN NaN\n");
-			}
+			resultsFile = fopen(printResults, "w");
 		}
 
-		double toc = (cvGetTickCount() - tic) / cvGetTickFrequency();
-		toc = toc / 1000000;
-		float fps = 1 / toc;
-		int confident = (tld->currConf >= threshold) ? 1 : 0;
-
-		if(showOutput || saveDir != NULL){
-			char string[128];
-			char learningString[10] = "";
-			if(tld->learning){
-				strcpy(learningString, "Learning");
-			}
-
-			sprintf(string, "Posterior %.2f; fps: %.2f, #numwindows:%d, %s", tld->currConf, fps, tld->detectorCascade->numWindows, learningString);
-
-			CvScalar yellow = CV_RGB(255, 255, 0);
-			CvScalar blue = CV_RGB(0, 0, 255);
-			CvScalar black = CV_RGB(0, 0, 0);
-			CvScalar white = CV_RGB(255, 255, 255);
-
-			if(tld->currBB != NULL){
-				//Draw the rectangle here this is what need to be sent by the publisher ! ;)
-				CvScalar rectangleColor = (confident) ? blue : yellow;
-				rectangle(img, tld->currBB->tl(), tld->currBB->br(), rectangleColor, 8, 8, 0);
-				if(showTrajectory){
-					CvPoint center = cvPoint(tld->currBB->x+tld->currBB->width/2, tld->currBB->y+tld->currBB->height/2);
-					line(img, cvPoint(center.x-2, center.y-2), cvPoint(center.x+2, center.y+2), rectangleColor, 2);
-					line(img, cvPoint(center.x-2, center.y+2), cvPoint(center.x+2, center.y-2), rectangleColor, 2);
-					line(img, cvPoint(center.x-2, center.y-2), cvPoint(center.x+2, center.y+2), rectangleColor, 2);
-					line(img, cvPoint(center.x-2, center.y+2), cvPoint(center.x+2, center.y-2), rectangleColor, 2);
-					trajectory.addPoint(center, rectangleColor);
-				}
-			}
-			else if(showTrajectory){
-				trajectory.addPoint(cvPoint(-1, -1), cvScalar(-1, -1, -1));
-			}
-
-			if(showTrajectory){
-			trajectory.drawTrajectory(img);
-			}
-
-			int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
-			rectangle(img, cvPoint(0, 0), cvPoint(grey.cols, 50), black, CV_FILLED, 8, 0);
-			putText(img, string, cvPoint(25, 25), fontFace, 0.5, Scalar::all(255), 1, 8);
-
-			if(showForeground){
-				for(size_t i = 0; i < tld->detectorCascade->detectionResult->fgList->size(); i++){
-					Rect r = tld->detectorCascade->detectionResult->fgList->at(i);
-					rectangle(img, r.tl(), r.br(), white, 1);
-				}
-			}
-/*********************************************************************/
-
-			Gui(img, grey);
-			
-/*********************************************************************/
-
+		if(loadModel && modelPath != ""){
+			tld->readFromFile(modelPath);
+			reuseFrameOnce = true;
 		}
-		else{
-			reuseFrameOnce = false;
+		else if(initialBB != NULL){
+			Rect bb = tldArrayToRect(initialBB);
+
+			printf("Starting at %d %d %d %d\n", bb.x, bb.y, bb.width, bb.height);
+
+			tld->selectObject(grey, &bb);
+			skipProcessingOnce = true;
+			reuseFrameOnce = true;
 		}
+		flag=false;
+	}
 
-/****************************ENDING WE PUBLISH****************************/
-		(*this).publish(tld->currBB);
-		//3D
-		(*this).handy->deepness(tld->currBB, &cloud);
+/****************main while*********************/
+	tick_t procInit, procFinal;
+	double tic = cvGetTickCount();
 
-
-		if(exportModelAfterRun)
-		{
-			tld->writeToFile(modelExportFile);
-		}
+	if(!skipProcessingOnce){
+		getCPUTick(&procInit);
+		tld->processImage(img);
+		getCPUTick(&procFinal);
 	}
 	else{
-		//std::cout<<"TROP LONG ;)"<<std::endl;
+		skipProcessingOnce = false;
+	}
+
+	/*******************PRINT ON THE TERMINAL************************/
+	if(printResults != NULL){
+		if(tld->currBB != NULL){
+			fprintf(resultsFile, "%.2d %.2d %.2d %.2d %f\n", tld->currBB->x, tld->currBB->y, tld->currBB->width, tld->currBB->height, tld->currConf);
+		}
+		else{
+			fprintf(resultsFile, " NaN NaN NaN NaN NaN\n");
+		}
+	}
+
+	double toc = (cvGetTickCount() - tic) / cvGetTickFrequency();
+	toc = toc / 1000000;
+	float fps = 1 / toc;
+	int confident = (tld->currConf >= threshold) ? 1 : 0;
+
+	if(showOutput || saveDir != NULL){
+		char string[128];
+		char learningString[10] = "";
+		if(tld->learning){
+			strcpy(learningString, "Learning");
+		}
+
+		sprintf(string, "Posterior %.2f; fps: %.2f, #numwindows:%d, %s", tld->currConf, fps, tld->detectorCascade->numWindows, learningString);
+		CvScalar yellow = CV_RGB(255, 255, 0);
+		CvScalar blue = CV_RGB(0, 0, 255);
+		CvScalar black = CV_RGB(0, 0, 0);
+		CvScalar white = CV_RGB(255, 255, 255);
+
+		if(tld->currBB != NULL){
+			//Draw the rectangle here this is what need to be sent by the publisher ! ;)
+			CvScalar rectangleColor = (confident) ? blue : yellow;
+			rectangle(img, tld->currBB->tl(), tld->currBB->br(), rectangleColor, 8, 8, 0);
+			if(showTrajectory){
+				CvPoint center = cvPoint(tld->currBB->x+tld->currBB->width/2, tld->currBB->y+tld->currBB->height/2);
+				line(img, cvPoint(center.x-2, center.y-2), cvPoint(center.x+2, center.y+2), rectangleColor, 2);
+				line(img, cvPoint(center.x-2, center.y+2), cvPoint(center.x+2, center.y-2), rectangleColor, 2);
+				line(img, cvPoint(center.x-2, center.y-2), cvPoint(center.x+2, center.y+2), rectangleColor, 2);
+				line(img, cvPoint(center.x-2, center.y+2), cvPoint(center.x+2, center.y-2), rectangleColor, 2);
+				trajectory.addPoint(center, rectangleColor);
+			}
+		}
+		else if(showTrajectory){
+			trajectory.addPoint(cvPoint(-1, -1), cvScalar(-1, -1, -1));
+		}
+
+		if(showTrajectory){
+		trajectory.drawTrajectory(img);
+		}
+
+		int fontFace = FONT_HERSHEY_SCRIPT_SIMPLEX;
+		rectangle(img, cvPoint(0, 0), cvPoint(grey.cols, 50), black, CV_FILLED, 8, 0);
+		putText(img, string, cvPoint(25, 25), fontFace, 0.5, Scalar::all(255), 1, 8);
+
+		if(showForeground){
+			for(size_t i = 0; i < tld->detectorCascade->detectionResult->fgList->size(); i++){
+				Rect r = tld->detectorCascade->detectionResult->fgList->at(i);
+				rectangle(img, r.tl(), r.br(), white, 1);
+			}
+		}
+/*********************************************************************/
+
+		Gui(img, grey);
+		
+/*********************************************************************/
+	}
+	else{
+		reuseFrameOnce = false;
+	}
+
+/****************************ENDING WE PUBLISH****************************/
+	(*this).publish(tld->currBB);
+	
+	
+/**********************************3D************************************/
+	if(enable3DTracking){
+		(*this).handy->tracking(tld->currBB);
+	}
+
+/*************************************************************************/
+
+	if(exportModelAfterRun){
+		tld->writeToFile(modelExportFile);
 	}
 }
 
@@ -215,19 +208,15 @@ void Main::publish(cv::Rect *currBB){
 	geometry_msgs::Point32 br;
 	if(currBB!=NULL){ 
 		polyStamp.header.frame_id="/camera";
-		tl.x=currBB->x; tl.y=currBB->y;
-	
-		br.x=currBB->x+currBB->width; br.y=currBB->y+currBB->height;
-	
+		tl.x=currBB->x; tl.y=currBB->y;	
+		br.x=currBB->x+currBB->width; br.y=currBB->y+currBB->height;	
 		tl.z=br.z=0;
 
 	}
 	else{
 		polyStamp.header.frame_id="NONE";
-		tl.x=-1; tl.y=-1;
-	
-		br.x=-1; br.y=-1;
-	
+		tl.x=-1; tl.y=-1;	
+		br.x=-1; br.y=-1;	
 		tl.z=br.z=0;
 
 	}
@@ -246,8 +235,11 @@ void Main::loadRosparam(){
 	ros::param::param<bool>("/OpenTLD3D/ShowTrajectory", showTrajectory, false);
 	ros::param::param<int>("/OpenTLD3D/Trajectory_length", trajectoryLength, 0);
 	ros::param::param<float>("/OpenTLD3D/TimeBetweenFrames", time_constant, 0.1);
-	ros::param::param<std::string>("/OpenTLD3D/Model", modelPath, "model");
+	ros::param::param<std::string>("/OpenTLD3D/Path2Model", modelPath, "model");
 	ros::param::param<bool>("/OpenTLD3D/LoadModel", loadModel, false);
+	ros::param::param<std::string>("/OpenTLD3D/SavingFile", modelExportFile, "~/model");
+	ros::param::param<bool>("/OpenTLD3D/3DTracking", enable3DTracking, false);
+	
 }
 
 
@@ -261,7 +253,6 @@ void Main::Gui(Mat& img, Mat& grey){
 		/********************KEYBOARD**************/
 		char key = gui->getKey();
 		if(keyboardControl==true){
-
 			//if(key == 'b'){
 			//    ForegroundDetector *fg = tld->detectorCascade->foregroundDetector;
 			//    if(fg->bgImg.empty()){
@@ -271,7 +262,6 @@ void Main::Gui(Mat& img, Mat& grey){
 			//      fg->bgImg.release();
 			//  }
 			//}
-
 
 			if(key == 'c'){
 				//clear everything
@@ -288,7 +278,7 @@ void Main::Gui(Mat& img, Mat& grey){
 				printf("alternating: %d\n", tld->alternating);
 			}
 
-			if(key == 'e'){
+			if(key == 'e' && tld->currBB!=NULL){
 				tld->writeToFile(modelExportFile);
 			}
 
@@ -305,6 +295,13 @@ void Main::Gui(Mat& img, Mat& grey){
 				Rect r = Rect(box);
 				tld->selectObject(grey, &r);
 			}
+			
+			//3D GOAL DEMAND
+			if(key == 'd'){
+				//(*this).handy->tracking(tld->currBB);
+				enable3DTracking=!enable3DTracking;
+			}
+			
 		}
 	}
 }

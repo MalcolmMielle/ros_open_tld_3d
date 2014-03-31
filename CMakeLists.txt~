@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  image_transport
 )
 
 find_package(PCL REQUIRED)
@@ -138,6 +139,8 @@ add_library(3dlib
 	include/open_tld_3d/handler3D.cpp
 	include/open_tld_3d/handler3D.hpp)
 
+target_link_libraries(${PCL_LIBRARIES})
+
 add_library(3Dcvblobs
     src/3rdparty/cvblobs/blob.cpp
     src/3rdparty/cvblobs/BlobContour.cpp
@@ -217,9 +220,9 @@ target_link_libraries(3Dmain 3Dlibopentld 3Dcvblobs 3Dconfig++ 3dlib ${PCL_LIBRA
 #    src/libopentld/tld/detector/cuda/CuEnsembleClassifier.cpp
 #    src/libopentld/tld/detector/cuda/CuVarianceFilter.cpp)
 
-add_executable(Opentld3D src/opentld/OpenTLD3d.cpp)
+add_executable(OpenTLD3D src/opentld/OpenTLD3d.cpp)
 
-target_link_libraries(Opentld3D 3Dmain 3Dcvblobs 3Dlibopentld 3Dconfig++ 3dlib ${OpenCV_LIBS} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(OpenTLD3D 3Dmain 3Dcvblobs 3Dlibopentld 3Dconfig++ 3dlib ${OpenCV_LIBS} ${catkin_LIBRARIES} ${PCL_LIBRARIES})
 
 add_executable(pcltrying src/3D/test.cpp)
 

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  image_transport
 )
 
 find_package(PCL REQUIRED)
@@ -137,6 +138,8 @@ include_directories(
 add_library(3dlib
 	include/open_tld_3d/handler3D.cpp
 	include/open_tld_3d/handler3D.hpp)
+
+target_link_libraries(3dlib ${PCL_LIBRARIES})
 
 add_library(3Dcvblobs
     src/3rdparty/cvblobs/blob.cpp

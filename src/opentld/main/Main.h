@@ -47,6 +47,9 @@
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
+#include "cv_bridge/cv_bridge.h"
+#include <sensor_msgs/image_encodings.h>
+
 using namespace tld;
 using namespace cv;
 
@@ -87,7 +90,9 @@ public:
 	Trajectory trajectory;
 	float time_constant;
 	//3D
-	handler3D *handy;
+	bool enable3DTracking;
+	Handler3D *handy;
+
 	//ROS
 	ros::Publisher *poete;
 
@@ -131,7 +136,12 @@ public:
         delete tld;
 //        imAcqFree(imAcq);
     }
-	void doWork(const sensor_msgs::PointCloud2ConstPtr& cloudy);
+    
+	
+	//void storing(const sensor_msgs::ImageConstPtr& msg);
+	//void doWork(const sensor_msgs::PointCloud2ConstPtr cloudy, const sensor_msgs::ImageConstPtr& img_cv);
+	//void doWork(const sensor_msgs::PointCloud2ConstPtr& cloudy);
+	void doWork(const sensor_msgs::ImageConstPtr& msg);
 	void publish(cv::Rect *currBB);
 	void loadRosparam();
 	void Gui(Mat& img, Mat& grey);

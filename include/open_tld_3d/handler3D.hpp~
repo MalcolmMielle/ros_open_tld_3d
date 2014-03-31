@@ -11,24 +11,28 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "sensor_msgs/PointCloud2.h"
+#include <geometry_msgs/PointStamped.h>
 #include "pcl_ros/point_cloud.h"
 // PCL specific includes
 #include <pcl/ros/conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 
-class handler3D{
+class Handler3D{
 	public : 
 	ros::Publisher pilote;
 	geometry_msgs::PoseStamped poseSt;
-	handler3D(){
+	ros::Time time_stamp;
+	pcl::PointCloud<pcl::PointXYZRGBA> cloud;
+	Handler3D() : time_stamp(ros::Time::now()){
 		
 	};
 	
-	void conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& cloudy, cv::Mat& result, pcl::PointCloud<pcl::PointXYZRGBA>* cloud);
-	void deepness(cv::Rect *currBB, pcl::PointCloud<pcl::PointXYZRGBA>* cloud);
-	void publish();
-
+	void setCloud(const sensor_msgs::PointCloud2ConstPtr& cloudy);
+	void conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& cloudy, cv::Mat& result, pcl::PointCloud<pcl::PointXYZRGBA>* cloudin);
+	void deepness(cv::Rect *currBB);
+	void publish(pcl::PointXYZRGBA& pt);
+	void tracking(cv::Rect *currBB);
 };
 
 #endif

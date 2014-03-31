@@ -2,5 +2,7 @@ Graphical_interface: true
 ShowTrajectory: false
 Trajectory_length: 50
 TimeBetweenFrames: 0.1
-Model: model
-LoadModel: true
+Path2Model: model
+LoadModel: false
+SavingFile: "/home/ros/catkin_ws/src/open_tld_3d/models/model"
+3DTracking: true

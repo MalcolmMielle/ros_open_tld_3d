@@ -398,7 +398,7 @@ void TLD::writeToFile(std::string& path)
 {
     INNClassifier *nn = detectorCascade->nnClassifier;
     IEnsembleClassifier *ec = detectorCascade->ensembleClassifier;
-
+	std::cout<<"Writing in "<< path<<std::endl;
     FILE *file = fopen(path.c_str(), "w");
     fprintf(file, "#Tld ModelExport\n");
     fprintf(file, "%d #width\n", detectorCascade->objWidth);

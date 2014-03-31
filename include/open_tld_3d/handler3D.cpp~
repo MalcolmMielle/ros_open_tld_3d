@@ -1,14 +1,29 @@
 #include "handler3D.hpp"
 
-void handler3D::conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& cloudy, cv::Mat& result, pcl::PointCloud<pcl::PointXYZRGBA>* cloud){
 
-	pcl::fromROSMsg(*cloudy, *cloud);	
-	if (cloud->isOrganized()) {
-	    result = cv::Mat(cloud->height, cloud->width, CV_8UC3);
+void Handler3D::setCloud(const sensor_msgs::PointCloud2ConstPtr& cloudy){
+	pcl::fromROSMsg(*cloudy, cloud);
+}
+
+void Handler3D::tracking(cv::Rect *currBB){
+	std::cout<<"Tracky tracky "<<std::endl;
+	if(currBB!=NULL){
+		int x=currBB->x+(currBB->width/2);
+		int y=currBB->y+(currBB->height/2);
+		pcl::PointXYZRGBA point(cloud.at(x,y));
+		(*this).publish(point);
+	}
+}
+
+void Handler3D::conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& cloudy, cv::Mat& result, pcl::PointCloud<pcl::PointXYZRGBA>* cloudin){
+
+	pcl::fromROSMsg(*cloudy, *cloudin);	
+	if (cloudin->isOrganized()) {
+	    result = cv::Mat(cloudin->height, cloudin->width, CV_8UC3);
 	    
 		  for (int h=0; h<result.rows; h++) {
 		      for (int w=0; w<result.cols; w++) {
-		          pcl::PointXYZRGBA point = cloud->at(w, h);
+		          pcl::PointXYZRGBA point = cloudin->at(w, h);
 
 		          Eigen::Vector3i rgb = point.getRGBVector3i();
 
@@ -23,25 +38,13 @@ void handler3D::conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& clo
 	}
 }
 
+void Handler3D::publish(pcl::PointXYZRGBA& ppointt){
 
-void handler3D::deepness(cv::Rect *currBB, pcl::PointCloud<pcl::PointXYZRGBA>* cloud){
-	if(currBB!=NULL){
-		int x=currBB->x+(currBB->width/2);
-		int y=currBB->y+(currBB->height/2);
-	
-		(*this).poseSt.pose.position.x=cloud->at(x,y).z;
-	
-		(*this).poseSt.pose.orientation.x=0;
-		(*this).poseSt.pose.orientation.y=0;
-		(*this).poseSt.pose.orientation.z=0;
-		(*this).poseSt.pose.orientation.w=1;
-	
-		(*this).poseSt.header.stamp=ros::Time::now();
-		(*this).poseSt.header.frame_id="/camera";
-		(*this).publish();
-	}
-}
-
-void handler3D::publish(){
-	(*this).pilote.publish(poseSt);
+	geometry_msgs::PointStamped pt;
+	pt.point.x=point.x;
+	pt.point.y=point.y;
+	pt.point.z=point.z;
+	pt.header.stamp=ros::Time::now();
+	pt.header.frame_id="camera";
+	(*this).pilote.publish(pt);
 }

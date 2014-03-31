@@ -1,5 +1,6 @@
+
 <launch>  
-  <node name="OpenTLD3D" pkg="open_tld_3d" type="OpenTLD3D">
+  <node name="OpenTLD3D" pkg="open_tld_3d" type="OpenTLD3D" launch-prefix="valgrind" >
     <rosparam file="$(find open_tld_3d)/config/opentldconfig.yaml" command="load" />
   </node>
 </launch>
