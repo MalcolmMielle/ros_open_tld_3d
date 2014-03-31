@@ -1,0 +1,5 @@
+<launch>  
+  <node name="TobotDriver" pkg="tobotdrivers" type="TobotNode">
+    <rosparam file="$(find tobotdrivers)/config/robot.yaml" command="load" />
+  </node>
+</launch>

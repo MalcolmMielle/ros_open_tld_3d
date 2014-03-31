@@ -1,0 +1,6 @@
+Graphical_interface: true
+ShowTrajectory: false
+Trajectory_length: 50
+TimeBetweenFrames: 0.1
+Model: model
+LoadModel: true

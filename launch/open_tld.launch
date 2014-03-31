@@ -1,0 +1,5 @@
+<launch>  
+  <node name="OpenTLD" pkg="open_tld" type="opentld">
+    <rosparam file="$(find open_tld)/config/opentldconfig.yaml" command="load" />
+  </node>
+</launch>

@@ -1,0 +1,85 @@
+#include "Main.h"
+#include "Config.h"
+#include "ImAcq.h"
+#include "Gui.h"
+#include "TLDUtil.h"
+#include "Trajectory.h"
+#include "Timing.h"
+#include "cv_bridge/cv_bridge.h"
+#include <sensor_msgs/image_encodings.h>
+
+
+
+#include "ros/ros.h"
+
+#include "opencv2/core/core_c.h"
+#include "opencv2/core/core.hpp"
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/highgui/highgui.hpp"
+
+
+#include "std_msgs/String.h"
+#include "std_msgs/Time.h"
+#include "std_msgs/Duration.h"
+#include <geometry_msgs/PolygonStamped.h>
+#include <sensor_msgs/Image.h>
+#include "pcl_ros/point_cloud.h"
+// PCL specific includes
+#include <pcl/ros/conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+
+
+void callback(const sensor_msgs::PointCloud2ConstPtr& cloudy){
+
+
+	pcl::fromROSMsg(*cloudy, cloud);	
+}
+
+
+int main (int argc, char **argv){
+	
+	Main *main = new Main();
+	Config config;
+	ImAcq *imAcq = imAcqAlloc();
+	Gui *gui = new Gui();
+	
+	ros::init(argc, argv, "point_cloud");
+	ros::NodeHandle nh;
+	std::string topic = nh.resolveName("point_cloud");
+	uint32_t queue_size = 1;
+	ros::Publisher poete=nh.advertise<geometry_msgs::PolygonStamped>("/tracking", 1000);
+	// callback signature
+	//void callback(const sensor_msgs::PointCloud2ConstPtr&);
+
+	// to create a subscriber, you can do this (as above):
+	//ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2> ("camera/depth/points_xyzrgb", queue_size, callback);
+	ros::Subscriber scribe = nh.subscribe<sensor_msgs::PointCloud2> ("camera/depth/points_xyzrgb", 100, &Main::doWork, main);
+	main->gui = gui;
+	main->imAcq = imAcq;
+	main->poete = &poete;
+	if(config.init(argc, argv) == PROGRAM_EXIT)
+	{
+		return EXIT_FAILURE;
+	}
+
+	config.configure(main);
+	
+	//loading ros parameters
+	main->loadRosparam();
+
+	//ros::param::get("/OpenTLD/Graphical_interface", main->showOutput);
+	srand(main->seed);
+
+	if(main->showOutput){
+		gui->init();
+	}
+	while(ros::ok()){
+		ros::spinOnce();
+	}
+
+	delete main;
+	return EXIT_SUCCESS;
+	
+}
+

@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfig.h
+stdio.h
+-
+
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfig.h++
+stdio.h
+-
+exception
+-
+string
+-
+
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfigcpp.c++
+libconfig.h++
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfig.h++
+wincompat.h
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/wincompat.h
+libconfig.h
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfig.h
+cstring
+-
+cstdlib
+-
+sstream
+-
+
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfigcpp.cc
+libconfigcpp.c++
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/libconfigcpp.c++
+
+/home/ros/catkin_ws/src/OpenTLD/src/3rdparty/libconfig/wincompat.h
+windows.h
+-
+
