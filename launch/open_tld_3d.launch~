@@ -1,6 +1,8 @@
 
-<launch>  
-  <node name="OpenTLD3D" pkg="open_tld_3d" type="OpenTLD3D"  >
+<launch>
+
+  <node name="OpenTLD3D" pkg="open_tld_3d" type="OpenTLD3D">
     <rosparam file="$(find open_tld_3d)/config/opentldconfig.yaml" command="load" />
   </node>
+
 </launch>

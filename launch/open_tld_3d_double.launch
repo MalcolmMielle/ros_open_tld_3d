@@ -1,0 +1,14 @@
+
+<launch>
+
+  <node name="OpenTLD3D" pkg="open_tld_3d" type="OpenTLD3D">
+    <rosparam file="$(find open_tld_3d)/config/opentldconfig.yaml" command="load" />
+  </node>
+  
+  <node name="OpenTLD3D_2" pkg="open_tld_3d" type="OpenTLD3D" >
+  	<remap from="/3D_tracking" to="/3D_trackingv2"/>
+  	<remap from="/2D_tracking" to="/2D_trackingv2"/>
+  	<rosparam file="$(find open_tld_3d)/config/opentldconfigv2.yaml" command="load" />
+  </node>
+
+</launch>

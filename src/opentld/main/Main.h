@@ -88,13 +88,14 @@ public:
 	bool skipProcessingOnce;
 	FILE *resultsFile;
 	Trajectory trajectory;
-	float time_constant;
+	double time_constant;
 	//3D
 	bool enable3DTracking;
 	Handler3D *handy;
 
 	//ROS
 	ros::Publisher *poete;
+	ros::NodeHandle pnode;
 
 	Main()
 	{
@@ -134,13 +135,8 @@ public:
     ~Main()
     {
         delete tld;
-//        imAcqFree(imAcq);
     }
     
-	
-	//void storing(const sensor_msgs::ImageConstPtr& msg);
-	//void doWork(const sensor_msgs::PointCloud2ConstPtr cloudy, const sensor_msgs::ImageConstPtr& img_cv);
-	//void doWork(const sensor_msgs::PointCloud2ConstPtr& cloudy);
 	void doWork(const sensor_msgs::ImageConstPtr& msg);
 	void publish(cv::Rect *currBB);
 	void loadRosparam();

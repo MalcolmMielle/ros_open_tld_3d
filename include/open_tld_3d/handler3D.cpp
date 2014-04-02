@@ -2,16 +2,17 @@
 
 
 void Handler3D::setCloud(const sensor_msgs::PointCloud2ConstPtr& cloudy){
-	pcl::fromROSMsg(*cloudy, cloud);
+	pcl::fromROSMsg(*cloudy, *cloud);
 }
 
 void Handler3D::tracking(cv::Rect *currBB){
-	std::cout<<"Tracky tracky "<<std::endl;
 	if(currBB!=NULL){
 		int x=currBB->x+(currBB->width/2);
 		int y=currBB->y+(currBB->height/2);
-		pcl::PointXYZRGBA point(cloud.at(x,y));
-		(*this).publish(point);
+		pcl::PointXYZRGBA point(cloud->at(x,y));
+		if(!isnan(point.x) && !isnan(point.y) && !isnan(point.z)){
+			(*this).publish(point);
+		}
 	}
 }
 

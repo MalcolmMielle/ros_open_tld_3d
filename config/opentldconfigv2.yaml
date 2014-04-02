@@ -1,11 +1,10 @@
-#best_config_
-
 Graphical_interface: true
-ShowTrajectory: false
+ShowTrajectory: true
 Trajectory_length: 50
-TimeBetweenFrames: 0.1
+TimeBetweenFrames: 1000
+Path2Model: model
 LoadModel: false
-Path2Model: "/home/ros/catkin_ws/src/Tobot/open_tld_3d/models/my_face"
 SavingFile: "/home/ros/catkin_ws/src/Tobot/open_tld_3d/models/my_face"
 Tracking3D: true
+source: "camera/rgb/image"
 queue_size : 1

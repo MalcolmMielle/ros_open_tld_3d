@@ -22,11 +22,10 @@ class Handler3D{
 	public : 
 	ros::Publisher pilote;
 	ros::Time time_stamp;
-	pcl::PointCloud<pcl::PointXYZRGBA> cloud;
-	Handler3D() : time_stamp(ros::Time::now()){
-		
+	pcl::PointCloud<pcl::PointXYZRGBA>* cloud;
+	Handler3D() : time_stamp(ros::Time::now()), cloud(new pcl::PointCloud<pcl::PointXYZRGBA>){
 	};
-	
+	~Handler3D(){delete cloud;}
 	void setCloud(const sensor_msgs::PointCloud2ConstPtr& cloudy);
 	void conversionFROMrosmsg(const sensor_msgs::PointCloud2ConstPtr& cloudy, cv::Mat& result, pcl::PointCloud<pcl::PointXYZRGBA>* cloudin);
 	void publish(pcl::PointXYZRGBA& pt);

@@ -21,7 +21,7 @@
 #include "std_msgs/Time.h"
 #include "std_msgs/Duration.h"
 #include <geometry_msgs/PolygonStamped.h>
-#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PointStamped.h>
 #include <sensor_msgs/Image.h>
 #include "pcl_ros/point_cloud.h"
 // PCL specific includes
@@ -33,33 +33,41 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
 
-int main (int argc, char **argv){
 
+
+int main (int argc, char **argv){
 	/************************Ros stuff************************/
 	ros::init(argc, argv, "Point_Cloud");
 	ros::NodeHandle my_node;
 	ros::Rate loop_rate(10);
 	
+	ros::NodeHandle priv_node("~");
+
 	//Algo stuff
 	Main *main = new Main();
 	Config config;
 	Gui *gui = new Gui();
 	Handler3D *theHandler = new Handler3D();
 	
+	//ROS param
+	int que;
+	priv_node.param<int>("queue_size", que, 1);
+	//Tracking option
+	bool enable3DTracking;
+	pnode.param<bool>("Tracking3D", enable3DTracking, false);
 	//Publisher and Subscriber
-	ros::Publisher poete=my_node.advertise<geometry_msgs::PolygonStamped>("/2D_tracking", 1000);
-	ros::Publisher pilote=my_node.advertise<geometry_msgs::PointStamped>("/3D_tracking", 1000);
-	
-	//Loading source.
-	std::string source;
-	ros::param::param<std::string>("/OpenTLD/source",source, "camera/rgb/image"); 
+	ros::Publisher poete=my_node.advertise<geometry_msgs::PolygonStamped>("/tracking2D", 1000);
+	ros::Publisher pilote=my_node.advertise<geometry_msgs::PointStamped>("/tracking3D", 1000);
+	ros::Subscriber scribe_cloud;
 
-	//Comparing timestamp myself. A bit random :/
-	ros::Subscriber scribe_cloud = my_node.subscribe<sensor_msgs::PointCloud2> ("camera/depth/points_xyzrgb", 1, &Handler3D::setCloud, theHandler);
-	//ros::Subscriber scribe=my_node.subscribe<sensor_msgs::Image>( "camera/rgb/image",1, &Main::doWork, main);
+	if(enable3DTracking==true){
+		//Do not compare the timestamp for now. A bit random :/
+		std::cout<<"FULL track"<<std::endl;
+		scribe_cloud = my_node.subscribe<sensor_msgs::PointCloud2> ("camera/depth/points_xyzrgb", 1, &Handler3D::setCloud, theHandler);
+	}
 	
 	image_transport::ImageTransport it(my_node);
-	image_transport::CameraSubscriber scribe_image = it.subscribeCamera(source, 1, boost::bind(&Main::doWork, main, _1));
+	image_transport::CameraSubscriber scribe_image = it.subscribeCamera("camera/rgb/image", que, boost::bind(&Main::doWork, main, _1));
 
 	//Time synchonisation so we don't have to much calculation =D
 	/*message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "/camera/depth/points_xyzrgb", 100);
@@ -72,8 +80,8 @@ int main (int argc, char **argv){
 	main->gui = gui;
 	main->poete = &poete;
 	main->handy = theHandler;
-	if(config.init(argc, argv) == PROGRAM_EXIT)
-	{
+	main->pnode = priv_node;
+	if(config.init(argc, argv) == PROGRAM_EXIT){
 		return EXIT_FAILURE;
 	}
 
@@ -88,7 +96,6 @@ int main (int argc, char **argv){
 		gui->init();
 	}
 	while(ros::ok()){
-	//std::cout<<"spin"<<std::endl;
 		ros::spinOnce();
 	}
 

@@ -359,6 +359,7 @@ void TLD::learn()
     {
         int idx = negativeIndices.at(i);
         //TODO: Somewhere here image warping might be possible
+        //Can fail !!
         detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], false, &detectionResult->featureVectors[detectorCascade->numTrees * idx]);
     }
 
@@ -400,88 +401,93 @@ void TLD::writeToFile(std::string& path)
     IEnsembleClassifier *ec = detectorCascade->ensembleClassifier;
 	std::cout<<"Writing in "<< path.c_str()<<std::endl;
     FILE *file = fopen(path.c_str(), "w");
-    fprintf(file, "#Tld ModelExport\n");
-    fprintf(file, "%d #width\n", detectorCascade->objWidth);
-    fprintf(file, "%d #height\n", detectorCascade->objHeight);
-    fprintf(file, "%f #min_var\n", detectorCascade->varianceFilter->minVar);
-    fprintf(file, "%d #Positive Sample Size\n", nn->truePositives->size());
+    if(file != NULL){
+	    fprintf(file, "#Tld ModelExport\n");
+	    fprintf(file, "%d #width\n", detectorCascade->objWidth);
+	    fprintf(file, "%d #height\n", detectorCascade->objHeight);
+	    fprintf(file, "%f #min_var\n", detectorCascade->varianceFilter->minVar);
+	    fprintf(file, "%d #Positive Sample Size\n", nn->truePositives->size());
 
 
 
-    for(size_t s = 0; s < nn->truePositives->size(); s++)
-    {
-        float *imageData = nn->truePositives->at(s).values;
+	    for(size_t s = 0; s < nn->truePositives->size(); s++)
+	    {
+		  float *imageData = nn->truePositives->at(s).values;
 
-        for(int i = 0; i < TLD_PATCH_SIZE; i++)
-        {
-            for(int j = 0; j < TLD_PATCH_SIZE; j++)
-            {
-                fprintf(file, "%f ", imageData[i * TLD_PATCH_SIZE + j]);
-            }
+		  for(int i = 0; i < TLD_PATCH_SIZE; i++)
+		  {
+		      for(int j = 0; j < TLD_PATCH_SIZE; j++)
+		      {
+		          fprintf(file, "%f ", imageData[i * TLD_PATCH_SIZE + j]);
+		      }
 
-            fprintf(file, "\n");
-        }
-    }
+		      fprintf(file, "\n");
+		  }
+	    }
 
-    fprintf(file, "%d #Negative Sample Size\n", nn->falsePositives->size());
+	    fprintf(file, "%d #Negative Sample Size\n", nn->falsePositives->size());
 
-    for(size_t s = 0; s < nn->falsePositives->size(); s++)
-    {
-        float *imageData = nn->falsePositives->at(s).values;
+	    for(size_t s = 0; s < nn->falsePositives->size(); s++)
+	    {
+		  float *imageData = nn->falsePositives->at(s).values;
 
-        for(int i = 0; i < TLD_PATCH_SIZE; i++)
-        {
-            for(int j = 0; j < TLD_PATCH_SIZE; j++)
-            {
-                fprintf(file, "%f ", imageData[i * TLD_PATCH_SIZE + j]);
-            }
+		  for(int i = 0; i < TLD_PATCH_SIZE; i++)
+		  {
+		      for(int j = 0; j < TLD_PATCH_SIZE; j++)
+		      {
+		          fprintf(file, "%f ", imageData[i * TLD_PATCH_SIZE + j]);
+		      }
 
-            fprintf(file, "\n");
-        }
-    }
+		      fprintf(file, "\n");
+		  }
+	    }
 
-    fprintf(file, "%d #numtrees\n", ec->numTrees);
-    detectorCascade->numTrees = ec->numTrees;
-    fprintf(file, "%d #numFeatures\n", ec->numFeatures);
-    detectorCascade->numFeatures = ec->numFeatures;
+	    fprintf(file, "%d #numtrees\n", ec->numTrees);
+	    detectorCascade->numTrees = ec->numTrees;
+	    fprintf(file, "%d #numFeatures\n", ec->numFeatures);
+	    detectorCascade->numFeatures = ec->numFeatures;
 
-    for(int i = 0; i < ec->numTrees; i++)
-    {
-        fprintf(file, "#Tree %d\n", i);
+	    for(int i = 0; i < ec->numTrees; i++)
+	    {
+		  fprintf(file, "#Tree %d\n", i);
 
-        for(int j = 0; j < ec->numFeatures; j++)
-        {
-            float *features = ec->features + 4 * ec->numFeatures * i + 4 * j;
-            fprintf(file, "%f %f %f %f # Feature %d\n", features[0], features[1], features[2], features[3], j);
-        }
+		  for(int j = 0; j < ec->numFeatures; j++)
+		  {
+		      float *features = ec->features + 4 * ec->numFeatures * i + 4 * j;
+		      fprintf(file, "%f %f %f %f # Feature %d\n", features[0], features[1], features[2], features[3], j);
+		  }
 
-        //Collect indices
-        vector<TldExportEntry> list;
+		  //Collect indices
+		  vector<TldExportEntry> list;
 
-        for(int index = 0; index < pow(2.0f, ec->numFeatures); index++)
-        {
-            int p = ec->positives[i * ec->numIndices + index];
+		  for(int index = 0; index < pow(2.0f, ec->numFeatures); index++)
+		  {
+		      int p = ec->positives[i * ec->numIndices + index];
 
-            if(p != 0)
-            {
-                TldExportEntry entry;
-                entry.index = index;
-                entry.P = p;
-                entry.N = ec->negatives[i * ec->numIndices + index];
-                list.push_back(entry);
-            }
-        }
+		      if(p != 0)
+		      {
+		          TldExportEntry entry;
+		          entry.index = index;
+		          entry.P = p;
+		          entry.N = ec->negatives[i * ec->numIndices + index];
+		          list.push_back(entry);
+		      }
+		  }
 
-        fprintf(file, "%d #numLeaves\n", list.size());
+		  fprintf(file, "%d #numLeaves\n", list.size());
 
-        for(size_t j = 0; j < list.size(); j++)
-        {
-            TldExportEntry entry = list.at(j);
-            fprintf(file, "%d %d %d\n", entry.index, entry.P, entry.N);
-        }
-    }
+		  for(size_t j = 0; j < list.size(); j++)
+		  {
+		      TldExportEntry entry = list.at(j);
+		      fprintf(file, "%d %d %d\n", entry.index, entry.P, entry.N);
+		  }
+	    }
 
-    fclose(file);
+	    fclose(file);
+	}
+	else{
+		std::cerr << "Cannot Open File "<< path.c_str()<<std::endl;
+	}
 
 }
 
