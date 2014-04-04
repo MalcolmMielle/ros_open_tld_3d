@@ -37,10 +37,19 @@
 using namespace tld;
 using namespace cv;
 
+void Main::doWork(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::PointCloud2ConstPtr& cloudy)
+{
+	if(ros::Time::now()-msg->header.stamp<ros::Duration(time_constant)){
+		handy->setCloud(cloudy);
+		doWork(msg);
+	}
+}
+
+
+
 void Main::doWork(const sensor_msgs::ImageConstPtr& msg)
 {	
 	if(ros::Time::now()-msg->header.stamp<ros::Duration(time_constant)){
-	
 		cv_bridge::CvImagePtr image_msg =cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::RGB8);		
 		Mat img=image_msg->image;
 		Mat grey;
@@ -196,7 +205,7 @@ void Main::doWork(const sensor_msgs::ImageConstPtr& msg)
 		}	
 	}
 	else{
-		//std::cout<<"TROP LONG ;)"<<std::endl;
+		ROS_INFO("Latency for a good Real Time tracking. Skipping a frame");
 	}
 }
 
@@ -242,7 +251,7 @@ void Main::loadRosparam(){
 	pnode.param<std::string>("Path2Model", modelPath, "~/model");
 	pnode.param<bool>("LoadModel", loadModel, false);
 	pnode.param<std::string>("SavingFile", modelExportFile, "~/model");
-	pnode.param<bool>("Tracking3D", enable3DTracking, false);
+	pnode.param<bool>("Tracking3D", enable3DTracking, true);
 }
 
 

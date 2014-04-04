@@ -32,14 +32,15 @@
 //Time filter
 #include <message_filters/subscriber.h>
 #include <message_filters/time_synchronizer.h>
+#include <message_filters/synchronizer.h>
+#include <message_filters/sync_policies/approximate_time.h>
 
-
+using namespace message_filters;
 
 int main (int argc, char **argv){
 	/************************Ros stuff************************/
 	ros::init(argc, argv, "Point_Cloud");
 	ros::NodeHandle my_node;
-	ros::Rate loop_rate(10);
 	
 	ros::NodeHandle priv_node("~");
 
@@ -51,15 +52,16 @@ int main (int argc, char **argv){
 	
 	//ROS param
 	int que;
-	priv_node.param<int>("queue_size", que, 1);
+	priv_node.param<int>("queue_size", que, 100);
 	//Tracking option
 	bool enable3DTracking;
-	priv_node.param<bool>("Tracking3D", enable3DTracking, false);
+	priv_node.param<bool>("Tracking3D", enable3DTracking, true);
 	//Publisher and Subscriber
 	ros::Publisher poete=my_node.advertise<geometry_msgs::PolygonStamped>("/tracking2D", 1000);
 	ros::Publisher pilote=my_node.advertise<geometry_msgs::PointStamped>("/tracking3D", 1000);
 	ros::Subscriber scribe_cloud;
-
+	/****OLD version***/
+	
 	if(enable3DTracking==true){
 		//Do not compare the timestamp for now. A bit random :/
 		std::cout<<"FULL track"<<std::endl;
@@ -68,11 +70,17 @@ int main (int argc, char **argv){
 	
 	image_transport::ImageTransport it(my_node);
 	image_transport::CameraSubscriber scribe_image = it.subscribeCamera("camera/rgb/image", que, boost::bind(&Main::doWork, main, _1));
+	
 
+	/*
 	//Time synchonisation so we don't have to much calculation =D
-	/*message_filters::Subscriber<sensor_msgs::PointCloud2> cloud_sub(nh, "/camera/depth/points_xyzrgb", 100);
-	message_filters::Subscriber<sensor_msgs::Image> image_sub(nh, "/camera/rgb/image", 100);
-	message_filters::TimeSynchronizer<sensor_msgs::PointCloud2, sensor_msgs::Image> sync(cloud_sub, image_sub, 10);
+	//But it's rather unpredictable... Very bad latency
+
+	typedef sync_policies::ApproximateTime<sensor_msgs::Image, sensor_msgs::PointCloud2> MySyncPolicy;
+	// ApproximateTime takes a queue size as its constructor argument, hence MySyncPolicy(10)
+	Subscriber<sensor_msgs::PointCloud2> cloud_sub(my_node, "/camera/depth/points_xyzrgb", 100);
+	Subscriber<sensor_msgs::Image> image_sub(my_node, "/camera/rgb/image", 100);
+	Synchronizer<MySyncPolicy> sync(MySyncPolicy(100), image_sub, cloud_sub);
 	sync.registerCallback(boost::bind(&Main::doWork, main, _1, _2));*/
 
 	theHandler->pilote=pilote;

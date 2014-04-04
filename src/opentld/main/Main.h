@@ -137,6 +137,7 @@ public:
         delete tld;
     }
     
+    	void doWork(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::PointCloud2ConstPtr& cloudy);
 	void doWork(const sensor_msgs::ImageConstPtr& msg);
 	void publish(cv::Rect *currBB);
 	void loadRosparam();
