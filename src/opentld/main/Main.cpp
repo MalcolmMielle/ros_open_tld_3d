@@ -37,6 +37,25 @@
 using namespace tld;
 using namespace cv;
 
+
+/****SERVICE can TALK BACK !*/
+bool Main::add(open_tld_3d::model::Request  &req, open_tld_3d::model::Response &res){
+	ROS_INFO("Request : %s", req.order.c_str());
+	if(!strcmp(req.order.c_str(),"face")){
+		modelPath=req.model;
+		tld->release();
+		tld->readFromFile(modelPath);
+	}
+	else if(!strcmp(req.order.c_str(),"stoplook")){
+		ROS_INFO("Stop la reconnaissance");
+		tld->release();
+	}	
+	res.answer=req.order;
+	return true;
+	
+}
+
+
 void Main::doWork(const sensor_msgs::ImageConstPtr& msg, const sensor_msgs::PointCloud2ConstPtr& cloudy)
 {
 	if(ros::Time::now()-msg->header.stamp<ros::Duration(time_constant)){
@@ -113,6 +132,7 @@ void Main::doWork(const sensor_msgs::ImageConstPtr& msg)
 
 		if(!skipProcessingOnce){
 			getCPUTick(&procInit);
+			//This is where we learn !
 			tld->processImage(img);
 			getCPUTick(&procFinal);
 		}
@@ -295,6 +315,7 @@ void Main::Gui(Mat& img, Mat& grey){
 			}
 
 			if(key == 'i'){
+				tld->release();
 				tld->readFromFile(modelPath);
 			}
 
@@ -310,6 +331,21 @@ void Main::Gui(Mat& img, Mat& grey){
 				//std::cout<<"the pointer box "<< r.height <<" "<<r.width <<std::endl;
 				if(r.height!=0 && r.width!=0){
 					tld->selectObject(grey, &r);
+				}
+			}
+			
+			if(key == 'n'){
+				CvRect box;
+				//std::cout<<"Gow "<<std::endl;
+				if(getBBFromUser(&img, box, gui) == PROGRAM_EXIT){
+					//  break;
+					exit(0);
+				}
+				//std::cout<<"hellow"<<std::endl;
+				Rect r = Rect(box);
+				//std::cout<<"the pointer box "<< r.height <<" "<<r.width <<std::endl;
+				if(r.height!=0 && r.width!=0){
+					tld->coninueSelectObject(grey, &r);
 				}
 			}
 			

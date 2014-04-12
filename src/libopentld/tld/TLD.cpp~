@@ -24,7 +24,7 @@
  */
 
 #include "TLD.h"
-
+#include "ros/ros.h"
 #include <iostream>
 
 #include "INNClassifier.h"
@@ -288,6 +288,117 @@ void TLD::initialLearning()
 
 }
 
+/**********************************µMY VERSION*********************************/
+void TLD::coninueSelectObject(const Mat &img, Rect *bb)
+{
+
+    //Delete old object
+
+    detectorCascade->objWidth = bb->width;
+    detectorCascade->objHeight = bb->height;
+
+    //Init detector cascade
+    detectorCascade->init();
+
+    currImg = img;
+    currBB = tldCopyRect(bb);
+    currConf = 1;
+    valid = true;
+
+	//FIRST STEP OF LEARNING WHERE THE FIRST SAMPLE IS TAKEN
+    continueLearning();
+
+}
+
+
+
+void TLD::continueLearning()
+{
+    learning = true; //This is just for display purposes
+
+    //DetectionResult *detectionResult = detectorCascade->detectionResult;
+
+    detectorCascade->detect(currImg);
+
+    //This is the positive patch
+    NormalizedPatch patch;
+    tldExtractNormalizedPatchRect(currImg, currBB, patch.values);
+    patch.positive = 1;
+
+    float initVar = tldCalcVariance(patch.values, TLD_PATCH_SIZE * TLD_PATCH_SIZE);
+    detectorCascade->varianceFilter->minVar = initVar / 2;
+
+
+    float *overlap = new float[detectorCascade->numWindows];
+    tldOverlapRect(detectorCascade->windows, detectorCascade->numWindows, currBB, overlap);
+
+    //Add all bounding boxes with high overlap
+
+    vector< pair<int, float> > positiveIndices;
+    vector<int> negativeIndices;
+
+    //First: Find overlapping positive and negative patches
+
+    for(int i = 0; i < detectorCascade->numWindows; i++)
+    {
+
+        if(overlap[i] > 0.6)
+        {
+            positiveIndices.push_back(pair<int, float>(i, overlap[i]));
+        }
+
+        if(overlap[i] < 0.2)
+        {
+            float variance = detectorCascade->detectionResult->variances[i];
+
+            if(!detectorCascade->varianceFilter->enabled || variance > detectorCascade->varianceFilter->minVar)   //TODO: This check is unnecessary if minVar would be set before calling detect.
+            {
+                negativeIndices.push_back(i);
+            }
+        }
+    }
+
+    sort(positiveIndices.begin(), positiveIndices.end(), tldSortByOverlapDesc);
+
+    vector<NormalizedPatch> patches;
+
+    patches.push_back(patch); //Add first patch to patch list
+
+    int numIterations = std::min<size_t>(positiveIndices.size(), 10); //Take at most 10 bounding boxes (sorted by overlap)
+
+    for(int i = 0; i < numIterations; i++)
+    {
+        int idx = positiveIndices.at(i).first;
+        //Learn this bounding box
+        //TODO: Somewhere here image warping might be possible
+        detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], true, &detectorCascade->detectionResult->featureVectors[detectorCascade->numTrees * idx]);
+    }
+
+    srand(1); //TODO: This is not guaranteed to affect random_shuffle
+
+    random_shuffle(negativeIndices.begin(), negativeIndices.end());
+
+    //Choose 100 random patches for negative examples
+    for(size_t i = 0; i < std::min<size_t>(100, negativeIndices.size()); i++)
+    {
+        int idx = negativeIndices.at(i);
+
+        NormalizedPatch patch;
+        tldExtractNormalizedPatchBB(currImg, &detectorCascade->windows[TLD_WINDOW_SIZE * idx], patch.values);
+        patch.positive = 0;
+        patches.push_back(patch);
+    }
+
+    detectorCascade->nnClassifier->learn(patches);
+
+    delete[] overlap;
+
+}
+/***************************************************************/
+
+
+
+
 //Do this when current trajectory is valid
 void TLD::learn()
 {
@@ -359,6 +470,7 @@ void TLD::learn()
     {
         int idx = negativeIndices.at(i);
         //TODO: Somewhere here image warping might be possible
+        //Can fail !!
         detectorCascade->ensembleClassifier->learn(&detectorCascade->windows[TLD_WINDOW_SIZE * idx], false, &detectionResult->featureVectors[detectorCascade->numTrees * idx]);
     }
 
@@ -500,7 +612,7 @@ void TLD::readFromFile(std::string& path)
 
     if(file == NULL)
     {
-        printf("Error: Model not found: %s\n", path.c_str());
+        ROS_ERROR("Error: Model not found: %s\n", path.c_str());
         exit(1);
     }
 

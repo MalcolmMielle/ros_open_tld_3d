@@ -41,6 +41,8 @@ class TLD
     void fuseHypotheses();
     void learn();
     void initialLearning();
+    void continueLearning();
+    
 public:
     bool trackerEnabled;
     bool detectorEnabled;
@@ -63,6 +65,7 @@ public:
     virtual ~TLD();
     void release();
     void selectObject(const cv::Mat &img, cv::Rect *bb);
+    void coninueSelectObject(const cv::Mat &img, cv::Rect *bb);
     void processImage(const cv::Mat &img);
     void writeToFile(std::string& path);
     void readFromFile(std::string& path);

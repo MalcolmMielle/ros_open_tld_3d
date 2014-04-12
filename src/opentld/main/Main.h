@@ -50,6 +50,9 @@
 #include "cv_bridge/cv_bridge.h"
 #include <sensor_msgs/image_encodings.h>
 
+#include "open_tld_3d/model.h"
+
+
 using namespace tld;
 using namespace cv;
 
@@ -142,7 +145,7 @@ public:
 	void publish(cv::Rect *currBB);
 	void loadRosparam();
 	void Gui(Mat& img, Mat& grey);
-	
+	bool add(open_tld_3d::model::Request  &req, open_tld_3d::model::Response &res);
     
 };
 

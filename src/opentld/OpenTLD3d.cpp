@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "Main.h"
 #include "Config.h"
 #include "ImAcq.h"
@@ -34,8 +36,11 @@
 #include <message_filters/time_synchronizer.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
-
+#include "open_tld_3d/model.h"
 using namespace message_filters;
+
+
+
 
 int main (int argc, char **argv){
 	/************************Ros stuff************************/
@@ -103,6 +108,13 @@ int main (int argc, char **argv){
 	if(main->showOutput){
 		gui->init();
 	}
+	
+	/***SERVICE**/
+	/***INUTILE commentaire***/
+	ros::ServiceServer service = my_node.advertiseService("modelisation", &Main::add, main);
+	ROS_INFO("Ready to change model");
+	
+	
 	while(ros::ok()){
 		ros::spinOnce();
 	}

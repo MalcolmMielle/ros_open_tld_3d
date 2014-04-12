@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   sensor_msgs
   std_msgs
+  message_generation
   image_transport
 )
 
@@ -88,11 +89,11 @@ include_directories(src/libopentld/imacq
 # )
 
 ## Generate services in the 'srv' folder
-# add_service_files(
-#   FILES
-#   Service1.srv
+ add_service_files(
+   FILES
+   AddTwoInts.srv
 #   Service2.srv
-# )
+ )
 
 ## Generate actions in the 'action' folder
 # add_action_files(
@@ -102,10 +103,11 @@ include_directories(src/libopentld/imacq
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   geometry_msgs#   std_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+#   geometry_msgs
+   std_msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -139,7 +141,7 @@ add_library(3dlib
 	include/open_tld_3d/handler3D.cpp
 	include/open_tld_3d/handler3D.hpp)
 
-target_link_libraries(${PCL_LIBRARIES})
+target_link_libraries(3dlib ${PCL_LIBRARIES})
 
 add_library(3Dcvblobs
     src/3rdparty/cvblobs/blob.cpp
