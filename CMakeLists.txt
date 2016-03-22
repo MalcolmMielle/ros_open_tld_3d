@@ -7,8 +7,6 @@ project(open_tld_3d)
 find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   geometry_msgs
-  pcl
-  pcl_ros
   roscpp
   rospy
   sensor_msgs
@@ -19,7 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(PCL REQUIRED)
 
-find_package(OpenCV REQUIRED)
+find_package( OpenCV REQUIRED)
 
 include_directories(${PCL_INCLUDE_DIRS})
 
